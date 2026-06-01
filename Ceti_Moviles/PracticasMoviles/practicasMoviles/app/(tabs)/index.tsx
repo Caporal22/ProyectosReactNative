@@ -1,98 +1,119 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { SensorButtons } from "@/components/SensorButtons";
+import { useAcelerometro } from "@/hooks/useSensores/useAcelerometro";
+import { useBarometro } from "@/hooks/useSensores/useBarometro";
+import { useGiroscopio } from "@/hooks/useSensores/useGiroscopio";
+import { usePodometro } from "@/hooks/useSensores/usePodometro";
+import { Image } from "expo-image";
+import React, { useState } from "react";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+type SensorType = "acelerometro" | "giroscopio" | "barometro" | "podometro";
 
-export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+const IMAGES = {
+    calm: require("@/assets/images/monet1.webp"),
+    shaking: require("@/assets/images/monet2.webp"),
+    rotating: require("@/assets/images/monet3.webp"),
+};
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
-  );
+export default function Sensores() {
+    const [activeSensor, setActiveSensor] =
+        useState<SensorType>("acelerometro");
+    const { data, isShaking } = useAcelerometro();
+    const { data: gyroData, isRotating } = useGiroscopio();
+    const { pressure, relativeAltitude } = useBarometro();
+    const { steps, isAvailable } = usePodometro();
+
+    const isAcel = activeSensor === "acelerometro";
+    const isGyro = activeSensor === "giroscopio";
+    const isBaro = activeSensor === "barometro";
+
+    const currentImage = isAcel
+        ? isShaking
+            ? IMAGES.shaking
+            : IMAGES.calm
+        : isGyro
+          ? isRotating
+              ? IMAGES.rotating
+              : IMAGES.calm
+          : IMAGES.calm;
+
+    const renderData = () => {
+        if (isAcel)
+            return (
+                <>
+                    <Text style={styles.status}>
+                        {isShaking ? "🔴 Agitando" : "🟢 En reposo"}
+                    </Text>
+                    <Text style={styles.data}>X: {data.x.toFixed(3)}</Text>
+                    <Text style={styles.data}>Y: {data.y.toFixed(3)}</Text>
+                    <Text style={styles.data}>Z: {data.z.toFixed(3)}</Text>
+                </>
+            );
+        if (isGyro)
+            return (
+                <>
+                    <Text style={styles.status}>
+                        {isRotating ? "🔴 Rotando" : "🟢 Estático"}
+                    </Text>
+                    <Text style={styles.data}>X: {gyroData.x.toFixed(3)}</Text>
+                    <Text style={styles.data}>Y: {gyroData.y.toFixed(3)}</Text>
+                    <Text style={styles.data}>Z: {gyroData.z.toFixed(3)}</Text>
+                </>
+            );
+        if (isBaro)
+            return (
+                <>
+                    <Text style={styles.status}>🌡️ Presión atmosférica</Text>
+                    <Text style={styles.data}>
+                        Presión: {pressure.toFixed(2)} hPa
+                    </Text>
+                    <Text style={styles.data}>
+                        Altitud: {relativeAltitude.toFixed(2)} m
+                    </Text>
+                </>
+            );
+        return (
+            <>
+                <Text style={styles.status}>
+                    {isAvailable ? "🚶 Contando pasos" : "❌ No disponible"}
+                </Text>
+                <Text style={styles.data}>Pasos: {steps}</Text>
+            </>
+        );
+    };
+
+    return (
+        <SafeAreaView style={styles.container}>
+            <ScrollView contentContainerStyle={styles.scroll}>
+                <Text style={styles.title}>Sensores</Text>
+                <SensorButtons
+                    current={activeSensor}
+                    onSelect={setActiveSensor}
+                />
+                <Image
+                    source={currentImage}
+                    style={styles.image}
+                    transition={300}
+                />
+                <View style={styles.card}>{renderData()}</View>
+            </ScrollView>
+        </SafeAreaView>
+    );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
+    container: { flex: 1, backgroundColor: "#0d1b2a" },
+    scroll: { alignItems: "center", padding: 20 },
+    title: { fontSize: 24, fontWeight: "700", color: "#fff", marginBottom: 20 },
+    image: { width: 300, height: 300, borderRadius: 16, marginBottom: 20 },
+    card: {
+        backgroundColor: "rgba(255,255,255,0.08)",
+        borderRadius: 16,
+        padding: 20,
+        width: "100%",
+        gap: 8,
+    },
+    status: { fontSize: 18, fontWeight: "600", color: "#fff", marginBottom: 8 },
+    data: { fontSize: 14, color: "#a8c0ff", fontFamily: "monospace" },
 });
