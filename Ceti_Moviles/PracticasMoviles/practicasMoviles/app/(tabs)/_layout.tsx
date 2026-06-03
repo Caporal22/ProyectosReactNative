@@ -63,6 +63,16 @@ export default function TabLayout() {
                     ),
                 }}
             />
+
+            <Tabs.Screen
+                name="sqlite"
+                options={{
+                    title: "SQLite",
+                    tabBarIcon: () => (
+                        <Ionicons size={28} name="server" color="white" />
+                    ),
+                }}
+            />
         </Tabs>
     );
 }

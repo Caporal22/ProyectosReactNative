@@ -38,7 +38,9 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "expo-sqlite",
+      "@react-native-firebase/app"
     ],
     "experiments": {
       "typedRoutes": true,
